@@ -21,3 +21,5 @@ gas.set_equivalence_ratio(air_ratio, fuel, air)
 gas.equilibrate('HP')
 
 print(f"Adiabatic flame temperature: {gas.T:.1f} K")
+
+#test commit from local repo

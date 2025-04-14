@@ -16,7 +16,7 @@ fig, ax = plt.subplots()
 for fuel_ratio in range(0, 100, 1):
     fuel_ratio = fuel_ratio / 100.0  # Convert to a fraction
     fuel = f'CH4:{fuel_ratio}, NH3:{1 - fuel_ratio}'
-    air = 'O2:1, N2:3.76'
+    air = 'O2:2, N2:7.52'
     gas.TP = gas_temp, ct.one_atm
 
     gas.set_equivalence_ratio(phi = air_ratio, fuel = fuel, oxidizer = air)

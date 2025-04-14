@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 
 
 # initial conditions
-fuel_ratio = 0.5
 phi = 1.0         
 T0 = 300         
 P0 = ct.one_atm  
@@ -42,7 +41,7 @@ for fuel_ratio in range(0, 110, 10):
 flame_speeds = np.array(flame_speeds)
 fuel_ratio = np.linspace(0, 1, len(flame_speeds))
 plt.figure(figsize=(8, 5))
-plt.plot(fuel_ratio, flame_speeds, marker='o')
+plt.plot(fuel_ratio, flame_speeds, color='blue', marker='o')
 plt.xlabel('CH₄ Mole Fraction in Fuel')
 plt.ylabel('Laminar Flame Speed [m/s]')
 plt.title(f'Laminar Flame Speed vs Fuel Composition (ϕ = {phi})')

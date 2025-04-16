@@ -8,39 +8,49 @@ import numpy as np
 #Adin Sokol, sokol25@up.edu
 
 gas = ct.Solution('gri30.yaml')
+gas_temp = 300
 
 #we can play with these
-gas_temp = 300
-air_ratio = 1.0
+phis = [0.9, 1.0, 1.1]  # equivalence ratios
+fuel_ratios = np.linspace(0, 1, 11)  # CH4 fraction from 0 to 1
 
-heat = []
-for fuel_ratio in range(0, 110, 10):
-    fuel_ratio = fuel_ratio / 100.0  # Convert to a fraction
-    fuel_ratio = round(fuel_ratio, 2)  # Round to 2 decimal places
-    fuel = f'CH4:{fuel_ratio}, NH3:{1 - fuel_ratio}' #round(1 - fuel_ratio,2)}'
-    air = 'O2:1, N2:3.76'
-    gas.TP = gas_temp, ct.one_atm
+heat = {phi: [] for phi in phis}
+for phi in phis:
+    for fr in fuel_ratios:
+        fuel = f'CH4:{fr}, NH3:{1 - fr}' #round(1 - fuel_ratio,2)}'
+        air = 'O2:1, N2:3.76'
+        gas.TP = gas_temp, ct.one_atm
 
-    h_initial = gas.enthalpy_mass
+        h_initial = gas.enthalpy_mass
 
-    gas.set_equivalence_ratio(phi = air_ratio, fuel = fuel, oxidizer = air)
-    gas.equilibrate('TP')
+        gas.set_equivalence_ratio(phi = phi, fuel = fuel, oxidizer = air)
+        gas.equilibrate('TP')
 
-    h_final = gas.enthalpy_mass
-    delta_h = (h_final - h_initial)/1e6
+        h_final = gas.enthalpy_mass
+        delta_h = (h_final - h_initial)/1e6
 
-    heat.append(h_final)
+        heat[phi].append(h_final)
 
-heat = np.array(heat)
-print(heat)
-fuel_ratio = np.linspace(0, 1, len(heat))
-plt.figure(figsize=(8, 5))
-plt.plot(fuel_ratio, heat, marker='o',color='green')
-plt.xlabel('CH₄ Mole Fraction in Fuel')
-plt.ylabel('Heat of Combustion [MJ/kg]')
-plt.title(f'Heat of Combustion vs Fuel Composition (ϕ = {air_ratio})')
-plt.grid(True)
-plt.tight_layout()
+
+fig, axs = plt.subplots(figsize=(8, 10))
+
+phi_styles = {
+    0.9: {'marker': 'o', 'color': 'blue'},
+    1.0: {'marker': 's', 'color': 'red'},
+    1.1: {'marker': 'x', 'color': 'green'}
+}
+
+
+for phi, style in phi_styles.items():
+    axs.plot(fuel_ratios, heat[phi], label=f'ϕ={phi}', **style)
+    axs.legend()
+    plt.xlabel('CH₄ Mole Fraction in Fuel')
+    plt.ylabel('Heat of Combustion [MJ/kg]')
+    plt.title(f'Heat of Combustion vs Fuel Composition')
+    plt.grid(True)
+    plt.tight_layout()
+    #axs.set_yscale('log')
 
 plt.show()
+
 

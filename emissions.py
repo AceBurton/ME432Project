@@ -1,56 +1,91 @@
 import cantera as ct
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
 
-#Ace Burton, burtona25@up.edu
-#Adin Sokol, sokol25@up.edu
+# Settings
+phis = [0.9, 1.0, 1.1]  # equivalence ratios
+fuel_ratios = np.linspace(0, 1, 11)  # CH4 fraction from 0 to 1
+NO = 'NO'
+NO2 = 'NO2'
+N2O = 'N2O'
+NH3 = 'NH3'
 
-gas = ct.Solution('gri30.yaml')
+# Store NO results for each phi
+NO_results = {phi: [] for phi in phis}
+NO2_results = {phi: [] for phi in phis}
+N2O_results = {phi: [] for phi in phis}
+NH3_results = {phi: [] for phi in phis}
 
-#we can play with these
-gas_temp = 300
-air_ratio = 1.0
+for phi in phis:
+    for fr in fuel_ratios:
+        try:
+            # Define fuel and oxidizer
+            fuel = f'CH4:{fr}, NH3:{1 - fr}'
+            oxidizer = 'O2:1, N2:3.76'
+            
+            # Set up gas and conditions
+            gas = ct.Solution('gri30.yaml')
+            gas.set_equivalence_ratio(phi=phi, fuel=fuel, oxidizer=oxidizer)
+            gas.TP = 300, ct.one_atm
+            
+            # Equilibrate at constant pressure and enthalpy (adiabatic)
+            gas.equilibrate('HP')
 
-NO = []
-NO2 = []
-N2O = []
-NH3 = []
+            # Get NO mole fraction
+            if NO in gas.species_names:
+                x_NO = gas.X[gas.species_index(NO)]
+            else:
+                x_NO = 0.0
+            
+            if NO2 in gas.species_names:
+                x_NO2 = gas.X[gas.species_index(NO2)]
+            else:
+                x_NO2 = 0.0
 
-for fuel_ratio in range(0, 110, 10):
-    fuel_ratio = fuel_ratio / 100.0  # Convert to a fraction
-    fuel_ratio = round(fuel_ratio, 2)  # Round to 2 decimal places
-    fuel = f'CH4:{fuel_ratio}, NH3:{1 - fuel_ratio}' #round(1 - fuel_ratio,2)}'    air = 'O2:1, N2:3.76'
-    air = 'O2:1, N2:3.76'
+            if N2O in gas.species_names:
+                x_N2O = gas.X[gas.species_index(N2O)]
+            else:
+                x_N2O = 0.0
 
-    gas.set_equivalence_ratio(phi = air_ratio, fuel = fuel, oxidizer = air)
-    gas.TP = gas_temp, ct.one_atm
+            if NH3 in gas.species_names:
+                x_NH3 = gas.X[gas.species_index(NH3)]
+            else:
+                x_NH3 = 0.0
 
-    gas.equilibrate('HP')
-    NO.append(gas.X[gas.species_index('NO')])
-    NO2.append(gas.X[gas.species_index('NO2')])
-    N2O.append(gas.X[gas.species_index('N2O')])
-    NH3.append(gas.X[gas.species_index('NH3')])
+            NO_results[phi].append(x_NO)
+            NO2_results[phi].append(x_NO2)
+            N2O_results[phi].append(x_N2O)
+            NH3_results[phi].append(x_NH3)
 
-NO = np.array(NO)
-NO2 = np.array(NO2)
-N2O = np.array(N2O)
-NH3 = np.array(NH3)
-fuel_ratio = np.linspace(0, 1, len(NO))
+        except Exception as e:
+            print(f"Failed at phi={phi}, CH4 fraction={fr:.2f}: {e}")
+            NO_results[phi].append(np.nan)
+            NO2_results[phi].append(np.nan)
+            N2O_results[phi].append(np.nan)
+            NH3_results[phi].append(np.nan)
 
 
-plt.figure(figsize=(8, 5))
+# --- Plotting ---
 
-plt.plot(fuel_ratio, NO,   marker='o', label='NO')
-plt.plot(fuel_ratio, NO2,  marker='s', label='NO₂')
-plt.plot(fuel_ratio, N2O,  marker='^', label='N₂O')
-plt.plot(fuel_ratio, NH3,  marker='x', label='NH₃')
+fig, axs = plt.subplots(4, 1, figsize=(8, 10), sharex=True)
 
-plt.xlabel('CH₄ Mole Fraction in Fuel')
-plt.ylabel('Mole Fraction')
-plt.title('Species vs CH₄ Fuel Fraction')
-plt.yscale('log')  # optional, makes small NOₓ values easier to see
-plt.grid(True)
-plt.legend()
+phi_styles = {
+    0.9: {'marker': 'o', 'color': 'blue'},
+    1.0: {'marker': 's', 'color': 'red'},
+    1.1: {'marker': 'x', 'color': 'green'}
+}
+
+species_results = [NO_results, NO2_results, N2O_results, NH3_results]
+species_labels = ['NO', 'NO₂', 'N₂O', 'NH₃']
+
+for ax, species, label in zip(axs, species_results, species_labels):
+    for phi, style in phi_styles.items():
+        ax.plot(fuel_ratios, species[phi], label=f'ϕ={phi}', **style)
+    ax.set_ylabel(label)
+    ax.set_yscale('log')
+    ax.legend()
+    ax.grid(True)
+
+axs[-1].set_xlabel('Fuel Ratio')
 plt.tight_layout()
 plt.show()
-
